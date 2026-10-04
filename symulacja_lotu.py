@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 import random, numpy as np
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
+from pogoda_api import WeatherScraper
 
 
 class Environment:
@@ -24,8 +25,8 @@ class CanSat(Environment):
         self.pos = random.randint(0, 359)
         self.r, self.h = size
 
-    def measure(self):
-        self.wind_v, self.wind_d = self._wind_blow()
+    def measure(self, wind_velocity, wind_direction ):
+        self.wind_v, self.wind_d = wind_velocity, wind_direction
         return self.wind_v, self.wind_d, self.pos, self.coords, self.height
 
     def calculate(self, wind_vel, wind_dir):
@@ -47,20 +48,33 @@ class CanSat(Environment):
     def counter(self, force, direction):
         pass
 
+scraper = WeatherScraper(51.3842, 15.1789)
+scraper.fetch()
+dane_pogodowe = scraper.interpolate_to_heights(target_heights_m=np.arange(0, 2501, 50))
+heights = dane_pogodowe["target_heights_m"]
+
+pogoda = []
+for h in heights:
+    wind_speed = dane_pogodowe[f"wind_speed_{h}m"][0]      # First timestamp
+    wind_dir = dane_pogodowe[f"wind_direction_{h}m"][0]   # First timestamp
+    pogoda.append((float(wind_speed), float(wind_dir)))
+
 sat = CanSat(0.3, 0.032, (0,0), 2000, (33, 115))
 positions = []
 heights = []
-_, _, _, start_coords, start_height = sat.measure()
+_, _, _, start_coords, start_height = sat.measure(pogoda[0][0], pogoda[0][1])
 end_coords, end_height = None, None
 
+i = 1
 while True:
-    _, _, _, position, height = sat.measure()
+    _, _, _, position, height = sat.measure(pogoda[i][0], pogoda[i][1])
     heights.append(height)
     positions.append(position)
     if height <= 0:
-        _, _, _, end_coords, end_height = sat.measure()
+        _, _, _, end_coords, end_height = sat.measure(pogoda[i][0], pogoda[i][1])
         break
-    sat.fall(1)
+    sat.fall(5)
+    i += 1
 
 fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -90,3 +104,4 @@ ax.grid(True, alpha=0.3)
 ax.legend(loc='best')
 plt.tight_layout()
 plt.show()
+
