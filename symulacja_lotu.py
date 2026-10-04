@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import random, numpy as np
-from time import sleep
+from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
 
 
 class Environment:
@@ -48,20 +49,44 @@ class CanSat(Environment):
 
 sat = CanSat(0.3, 0.032, (0,0), 2000, (33, 115))
 positions = []
+heights = []
+_, _, _, start_coords, start_height = sat.measure()
+end_coords, end_height = None, None
+
 while True:
     _, _, _, position, height = sat.measure()
-    if height <= 0:
-        break
+    heights.append(height)
     positions.append(position)
-    sat.fall(10)
-    # sleep(1)
+    if height <= 0:
+        _, _, _, end_coords, end_height = sat.measure()
+        break
+    sat.fall(1)
 
-startx = (list(zip(*positions))[0][0], list(zip(*positions))[0][-1])
-endx = (list(zip(*positions))[1][0], list(zip(*positions))[1][-1])
+fig, ax = plt.subplots(figsize=(10, 8))
 
-plt.plot(*zip(*positions), startx, endx, "o--")
-plt.title("CanSat position in time domain")
-plt.xlabel("X coordinates")
-plt.ylabel("Y coordinates")
-plt.grid()
+norm = Normalize(vmin=min(heights), vmax=max(heights))
+cmap = plt.cm.viridis
+
+sc = ax.scatter([p[0] for p in positions], [p[1] for p in positions], 
+                c=heights, cmap=cmap, norm=norm, s=60, edgecolors='white', linewidth=0.5)
+
+ax.scatter([start_coords[0]], [start_coords[1]], c='green', s=200, marker='^', 
+           edgecolors='black', linewidth=1.5, label='Start', zorder=5)
+
+if end_coords:
+    ax.scatter([end_coords[0]], [end_coords[1]], c='red', s=200, marker='o', 
+               edgecolors='black', linewidth=1.5, label='End', zorder=5)
+
+ax.plot([p[0] for p in positions], [p[1] for p in positions], 
+        '--', alpha=0.3, color='black', linewidth=1)
+
+cbar = plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+cbar.set_label('Height (m)', fontsize=10)
+
+ax.set_title("CanSat Trajectory (colored by height)", fontsize=12, weight='bold')
+ax.set_xlabel("X Coordinates", fontsize=10)
+ax.set_ylabel("Y Coordinates", fontsize=10)
+ax.grid(True, alpha=0.3)
+ax.legend(loc='best')
+plt.tight_layout()
 plt.show()
