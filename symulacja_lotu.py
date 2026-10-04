@@ -1,8 +1,9 @@
+from matplotlib import pyplot as plt
 import random, numpy as np
 from time import sleep
 
 
-class Otoczenie:
+class Environment:
     def __init__(self, wind_table):
         self.g = 9.81 # m/s²
         self.rho = 1.225 # kg/m³
@@ -11,7 +12,7 @@ class Otoczenie:
     def _wind_blow(self):
         return random.randint(1, 10), random.randint(0, 359) # (velocity, direction)
 
-class CanSat(Otoczenie):
+class CanSat(Environment):
     def __init__(self, weight, par_area, gps, height, size):
         super().__init__(None)
         self.mass = weight
@@ -24,7 +25,7 @@ class CanSat(Otoczenie):
 
     def measure(self):
         self.wind_v, self.wind_d = self._wind_blow()
-        return self.wind_v, self.wind_d, self.pos, self.coords
+        return self.wind_v, self.wind_d, self.pos, self.coords, self.height
 
     def calculate(self, wind_vel, wind_dir):
         pos = 360-wind_dir
@@ -45,10 +46,22 @@ class CanSat(Otoczenie):
     def counter(self, force, direction):
         pass
 
-H = 2000
-sat = CanSat(0.3, 0.032, (100, 100), H, (33, 115))
-while H > 0:
-    sat.measure()
-    print(sat.log())
-    sat.fall(1)
-    sleep(1)
+sat = CanSat(0.3, 0.032, (0,0), 2000, (33, 115))
+positions = []
+while True:
+    _, _, _, position, height = sat.measure()
+    if height <= 0:
+        break
+    positions.append(position)
+    sat.fall(10)
+    # sleep(1)
+
+startx = (list(zip(*positions))[0][0], list(zip(*positions))[0][-1])
+endx = (list(zip(*positions))[1][0], list(zip(*positions))[1][-1])
+
+plt.plot(*zip(*positions), startx, endx, "o--")
+plt.title("CanSat position in time domain")
+plt.xlabel("X coordinates")
+plt.ylabel("Y coordinates")
+plt.grid()
+plt.show()
