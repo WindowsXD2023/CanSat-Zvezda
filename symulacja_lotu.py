@@ -54,7 +54,7 @@ class CanSat(Environment):
         pass
 
 
-scraper = WeatherScraper(51.3842, 15.1789)
+scraper = WeatherScraper(50.3237, 19.2195)
 scraper.fetch()
 dane_pogodowe = scraper.interpolate_to_heights(target_heights_m=np.arange(0, 2501, 50))
 heights = dane_pogodowe["target_heights_m"]
@@ -62,8 +62,10 @@ heights = dane_pogodowe["target_heights_m"]
 pogoda = []
 for h in heights:
     wind_speed = dane_pogodowe[f"wind_speed_{h}m"][0]  # First timestamp
+    print(wind_speed)
     wind_dir = dane_pogodowe[f"wind_direction_{h}m"][0]  # First timestamp
     pogoda.append((float(wind_speed), float(wind_dir)))
+
 
 sat = CanSat(0.3, 0.032, (0, 0), 2000, (33, 115))
 positions = []
